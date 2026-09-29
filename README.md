@@ -2,7 +2,7 @@
 
 > Relatório interativo construído sobre a base **sample financials** do Power BI, com navegação por botões, indicadores e visuais alternáveis.
 
-![Página 1 do relatório](imagens/pagina-1.png)
+![Página 1 do relatório](pagina-1.png)
 
 ## 📌 Sobre o projeto
 
@@ -74,12 +74,15 @@ Ao abrir o arquivo, o Power BI Desktop carrega esses visuais automaticamente.
 powerbi-relatorio-financials/
 ├── README.md
 ├── Relatorio_Financials.pbix
-└── imagens/
-    ├── pagina-1.png
-    └── pagina-2.png
+├── pagina-1.png
+└── pagina-2.png
 ```
 
 ➡️ **[Baixar o arquivo .pbix](Relatorio_Financials.pbix)**
+
+### Página 2 — Análise Detalhada
+
+![Página 2 do relatório](pagina-2.png)
 
 ## 🚀 Como abrir
 
@@ -99,3 +102,4 @@ powerbi-relatorio-financials/
 ## 🙋 Autor
 
 **Antônio Leite Pagnano**
+
