@@ -1,6 +1,6 @@
 # 📊 Relatório Financials | Power BI
 
-> Relatório interativo construído sobre a base **sample financials** do Power BI, com menu de navegação persistente, indicadores e visuais alternáveis — em três páginas.
+> Relatório interativo construído sobre a base **sample financials** do Power BI, com menu de navegação persistente, indicadores, visuais alternáveis e análise estatística — em cinco páginas.
 
 ![Página 1 — Sales Report](pagina-1.png)
 
@@ -14,6 +14,7 @@ Projeto desenvolvido ao longo de dois desafios da [DIO](https://www.dio.me), na 
 |---|---|
 | **Criando um Relatório Gerencial com Power BI** | A estrutura de páginas, os indicadores que alternam visuais e os segmentadores com imagem |
 | **Atualizando Relatório Financeiro com Foco na Experiência do Usuário** | O redesenho visual, o menu de navegação em todas as páginas e a terceira página analítica |
+| **Explorando Dados com Analytics, Segmentação e DAX** | As páginas 4 e 5 — outliers por desvio padrão, TOP N, agrupamentos e medidas DAX |
 
 A proposta do primeiro era ir além de um relatório simples: construir uma estrutura de páginas definida, com navegabilidade por botões, segmentadores com imagem associada e indicadores que permitem alternar entre diferentes visuais sobre um mesmo assunto.
 
@@ -39,7 +40,7 @@ O desafio propõe quatro princípios. O que cada um mudou aqui:
 
 ## 🧭 Menu de navegação
 
-Cada uma das três páginas tem o mesmo menu na faixa lateral esquerda, com botões para **Page 1**, **Page 2** e **Page 3**. Estar sempre no mesmo lugar é o que torna a navegação previsível: o leitor não procura como sair de onde está.
+Cada página tem o mesmo menu na faixa lateral esquerda, com botões de **Page 1** a **Page 5**. Estar sempre no mesmo lugar é o que torna a navegação previsível: o leitor não procura como sair de onde está.
 
 Os botões usam os três estados que o Power BI oferece, e cada um comunica uma coisa diferente:
 
@@ -96,6 +97,78 @@ Página criada no desafio de experiência do usuário, com foco em leitura tempo
 
 ![Página 3 — Report de Vendas Detalhado](pagina-3.png)
 
+### Página 4 — TOP N & Outliers
+
+Página estatística. Em vez de mostrar o total, procura o que foge do total: os produtos que concentram a receita e as vendas que destoam do comportamento médio.
+
+| Elemento | Descrição |
+|---|---|
+| Cards de estatística | Máximo Vendido, Média de Vendas, Desvio Padrão de Vendas, Limite Superior de Outlier e Qtd de Outliers |
+| Filtro N Principais | Aplicado no visual, limita a exibição aos produtos de maior receita |
+| Gráfico de dispersão | Com **Eixo de Reprodução**, animando a evolução dos pontos ao longo do tempo |
+| Linha de tendência | Adicionada pelo painel **Análise**, revelando a direção geral da relação |
+| Medidas DAX | `Ranking de Produto` e `TOP 3 Produtos` |
+
+O critério de outlier adotado é **média + 2 desvios padrão**. Vendas acima desse limite são tratadas como atípicas — não erradas, mas raras o bastante para merecerem leitura separada da média.
+
+### Página 5 — Categorias & Clusters
+
+Página de segmentação. A mesma base é recortada de quatro maneiras diferentes, cada visual demonstrando um tipo distinto de agrupamento.
+
+| Elemento | Descrição | Tipo de segmentação |
+|---|---|---|
+| Volume x Receita por Produto e País | Dispersão com `Units Sold` em X e `Sales` em Y, com linha de tendência | Granularidade por `Valores` |
+| Distribuição de Unidades Vendidas | Histograma: contagem de vendas por faixa de 500 unidades | Compartimentos (binning numérico) |
+| Vendas por Continente | `Country (grupos)` — América do Norte, Europa e América Latina | Agrupamento de lista |
+| Vendas por Semestre | `Month Name (grupos)` — Primeiro e Segundo Semestre | Agrupamento de período |
+| Vendas por Faixa de Valor | `Faixa de Venda` — Alta, Média e Baixa | Coluna calculada em DAX |
+| Segmentador | `Segment (grupos)` filtrando a página inteira | Agrupamento de lista |
+
+O histograma usa **contagem** no eixo Y, não soma. Com soma, uma faixa maior naturalmente acumularia mais unidades e o gráfico só repetiria o óbvio; com contagem, ele mostra frequência — quantas vendas se parecem entre si. O perfil que aparece é assimétrico: a maioria das vendas é de volume pequeno a médio, e as de volume alto são poucas. São exatamente os pontos isolados à direita do gráfico de dispersão da mesma página.
+
+---
+
+## 🧮 Medidas e colunas DAX
+
+```dax
+Total Sales = SUM(financials[Sales])
+
+Máximo Vendido = MAX(financials[Units Sold])
+
+Média de Vendas = AVERAGE(financials[Sales])
+
+Desvio Padrão de Vendas = STDEV.P(financials[Sales])
+
+Limite Superior de Outlier = [Média de Vendas] + 2 * [Desvio Padrão de Vendas]
+
+Qtd de Outliers =
+VAR Limite = [Limite Superior de Outlier]
+RETURN COUNTROWS(FILTER(financials, financials[Sales] > Limite))
+
+Ranking de Produto =
+RANKX(ALLSELECTED(financials[Product]), [Total Sales], , DESC)
+
+TOP 3 Produtos =
+VAR Top3 = TOPN(3, ALLSELECTED(financials[Product]), [Total Sales], DESC)
+RETURN CALCULATE([Total Sales], KEEPFILTERS(Top3))
+```
+
+Coluna calculada:
+
+```dax
+Faixa de Venda =
+SWITCH(TRUE(),
+    financials[Sales] >= 20000, "Alta",
+    financials[Sales] >= 5000,  "Média",
+    "Baixa")
+```
+
+Duas decisões de implementação valem o registro:
+
+**O `VAR` em `Qtd de Outliers` não é estética.** Sem ele, `[Limite Superior de Outlier]` seria reavaliado a cada linha dentro do `FILTER`, e o resultado mudaria de significado — passaria a comparar cada venda contra um limite recalculado no contexto dela mesma. A variável congela o limite uma vez, no contexto da página, que é o comportamento pretendido.
+
+**`TOP 3 Produtos` usa `TOPN` + `KEEPFILTERS`, não `RANKX`.** Uma medida baseada em ranking só devolve o valor certo quando `Product` está no visual, porque depende do contexto de linha para saber qual produto ranquear. A versão com `TOPN` monta a tabela dos três primeiros e filtra por ela, então funciona igual dentro de um gráfico por produto ou isolada num card.
+
 ---
 
 ## ⚪ Indicadores e visuais alternáveis
@@ -144,7 +217,9 @@ powerbi-relatorio-financials/
 ├── Relatorio_Financials.pbix
 ├── pagina-1.png
 ├── pagina-2.png
-└── pagina-3.png
+├── pagina-3.png
+├── pagina-4.png
+└── pagina-5.png
 ```
 
 [⬇️ Baixar o arquivo .pbix](Relatorio_Financials.pbix)
@@ -163,7 +238,7 @@ powerbi-relatorio-financials/
 
 ## 🛠️ Recursos aplicados
 
-- Estrutura de três páginas com layout definido em 1920x1080
+- Estrutura de cinco páginas com layout definido em 1920x1080
 - Menu de navegação lateral replicado em todas as páginas
 - Botões com estados de **padrão**, **focalizar** e **selecionado**
 - Indicadores (bookmarks) para alternar visuais sem trocar de página
@@ -173,6 +248,11 @@ powerbi-relatorio-financials/
 - Visuais customizados do AppSource
 - Composição de layout por formas, faixas de cor e caixas de texto
 - Princípios de posicionamento, contraste, proporção áurea e segmentação
+- Filtro **N Principais** aplicado em nível de visual
+- **Eixo de Reprodução** para evolução temporal animada
+- **Linha de tendência** pelo painel Análise
+- Agrupamentos de lista, de período e por compartimentos numéricos
+- Medidas e colunas calculadas em DAX para ranking, outliers e faixas de valor
 
 ---
 
