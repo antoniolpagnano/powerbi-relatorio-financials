@@ -111,6 +111,8 @@ Página estatística. Em vez de mostrar o total, procura o que foge do total: os
 
 O critério de outlier adotado é **média + 2 desvios padrão**. Vendas acima desse limite são tratadas como atípicas — não erradas, mas raras o bastante para merecerem leitura separada da média.
 
+![Página 4 — TOP N & Outliers](pagina-4.png)
+
 ### Página 5 — Categorias & Clusters
 
 Página de segmentação. A mesma base é recortada de quatro maneiras diferentes, cada visual demonstrando um tipo distinto de agrupamento.
@@ -125,6 +127,8 @@ Página de segmentação. A mesma base é recortada de quatro maneiras diferente
 | Segmentador | `Segment (grupos)` filtrando a página inteira | Agrupamento de lista |
 
 O histograma usa **contagem** no eixo Y, não soma. Com soma, uma faixa maior naturalmente acumularia mais unidades e o gráfico só repetiria o óbvio; com contagem, ele mostra frequência — quantas vendas se parecem entre si. O perfil que aparece é assimétrico: a maioria das vendas é de volume pequeno a médio, e as de volume alto são poucas. São exatamente os pontos isolados à direita do gráfico de dispersão da mesma página.
+
+![Página 5 — Categorias & Clusters](pagina-5.png)
 
 ---
 
